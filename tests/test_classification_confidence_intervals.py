@@ -17,8 +17,82 @@ from conftest import (
     valid_sp,
 )
 import pytest
+from sklearn import datasets
+import numpy as np
+from sklearn.utils.validation import check_random_state
+from sklearn import svm
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
 from classificationconfidenceintervals import ClassificationConfidenceIntervals
+
+
+def make_prediction(dataset=None, binary=False):
+    """Make some classification predictions on a toy dataset using a SVC
+
+    If binary is True restrict to a binary classification problem instead of a
+    multiclass classification problem
+    """
+
+    if dataset is None:
+        # import some data to play with
+        dataset = datasets.load_iris()
+
+    X = dataset.data
+    y = dataset.target
+
+    if binary:
+        # restrict to a binary classification task
+        X, y = X[y < 2], y[y < 2]
+
+    n_samples, n_features = X.shape
+    p = np.arange(n_samples)
+
+    rng = check_random_state(37)
+    rng.shuffle(p)
+    X, y = X[p], y[p]
+    half = int(n_samples / 2)
+
+    # add noisy features to make the problem harder and avoid perfect results
+    rng = np.random.RandomState(0)
+    X = np.c_[X, rng.randn(n_samples, 200 * n_features)]
+
+    # run classifier, get class probabilities and label predictions
+    clf = svm.SVC(kernel='linear', probability=True, random_state=0)
+    probas_pred = clf.fit(X[:half], y[:half]).predict_proba(X[half:])
+
+    if binary:
+        # only interested in probabilities of the positive case
+        # XXX: do we really want a special API for the binary case?
+        probas_pred = probas_pred[:, 1]
+
+    y_pred = clf.predict(X[half:])
+    y_true = y[half:]
+    return y_true, y_pred, probas_pred
+
+
+def test_iris():
+    iris = datasets.load_iris()
+    y_true, y_pred, _ = make_prediction(dataset=iris, binary=False)
+    le = LabelEncoder()
+    le.fit(np.unique(y_true))
+    y_true = le.transform(y_true)
+    y_pred = le.transform(y_pred)
+    enc = OneHotEncoder()
+    y_true_matrix = enc.fit_transform(y_true.reshape(-1, 1)).toarray()
+    y_pred_matrix = enc.transform(y_pred.reshape(-1, 1)).toarray()
+    pos_rate_cis, ppv_cis, npv_cis, recall_cis = [], [], [], []
+    ci = 0.95
+    for j in range(y_true_matrix.shape[1]):
+        class_ci = ClassificationConfidenceIntervals(
+            sample_labels=y_true_matrix[:, j],
+            sample_predictions=y_pred_matrix[:, j],
+            population_size=1000000,
+            population_flagged_count=50000,
+            confidence_level=ci).get_cis()
+        pos_rate_cis.append(class_ci[0].tnorm_ci)
+        ppv_cis.append(class_ci[1].tnorm_ci)
+        npv_cis.append(class_ci[2].tnorm_ci)
+        recall_cis.append(class_ci[3].tnorm_ci)
 
 
 @pytest.mark.parametrize(

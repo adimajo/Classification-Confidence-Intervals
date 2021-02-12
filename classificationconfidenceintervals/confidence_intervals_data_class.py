@@ -23,16 +23,16 @@ class CIDataClass:
     Attributes:
         tnorm_ci (tuple): Truncated normal confidence interval.
         poisson_ci (tuple): Poisson confidence interval.
-        lrt_ci (tuple): Inverted binomial likelihood ratio test confidence interval.
-        score_ci (tuple): Inverted binomial score test confidence interval.
+        # lrt_ci (tuple): Inverted binomial likelihood ratio test confidence interval.
+        # score_ci (tuple): Inverted binomial score test confidence interval.
         posterior_ci (tuple): Beta-Binomial posterior confidence interval.
 
     """
 
     tnorm_ci: Tuple[float, float]
     poisson_ci: Tuple[float, float]
-    lrt_ci: Tuple[float, float]
-    score_ci: Tuple[float, float]
+    # lrt_ci: Tuple[float, float]
+    # score_ci: Tuple[float, float]
     posterior_ci: Tuple[float, float]
 
     def get(self, key: str) -> Tuple[float, float]:

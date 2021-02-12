@@ -47,31 +47,9 @@ from .read_only_properties_decorator import read_only_properties
     "ppv_dist_tnorm",
 )
 class ClassificationConfidenceIntervals:
-    """Class for determining confidence intervals for classification metrics."""
+    """Class for determining confidence intervals for classification metrics.
 
-    def __init__(
-        self,
-        sample_labels: List[Union[bool, int]],
-        sample_predictions: List[Union[bool, int]],
-        population_size: int,
-        population_flagged_count: int,
-        confidence_level: float,
-        exact_precision: Union[None, float] = None,
-    ) -> None:
-        """Initialization.
-
-        Args:
-            sample_labels (list): Binary labels of datapoints in sample, with labels as boolean or
-                binary in [0,1] or in [-1,1].
-            sample_predictions (list): Binary labels of datapoints in sample flagged as positives
-                by algorithm, with labels as boolean or binary in [0,1] or in [-1,1].
-            population_size (int): Size of population.
-            population_flagged_count (int): Number of datapoints in population flagged as positives
-                by algorithm.
-            confidence_level (float): Confidence level, equal to area desired under curve.
-            exact_precision (float): If provided, the actual population precision.
-
-        Attributes:
+    Attributes:
             N (int): Population size.
             N_flagged (int): Population flagged count.
             alpha (float): Confidence level.
@@ -107,6 +85,30 @@ class ClassificationConfidenceIntervals:
             ppv_dist_tnorm (scipy.stats._distn_infrastructure.rv_frozen):
                 Fitted truncated normal distribution for precision.
 
+"""
+
+    def __init__(
+        self,
+        sample_labels: List[Union[bool, int]],
+        sample_predictions: List[Union[bool, int]],
+        population_size: int,
+        population_flagged_count: int,
+        confidence_level: float,
+        exact_precision: Union[None, float] = None,
+    ) -> None:
+        """Initialization.
+
+        Args:
+            sample_labels (list): Binary labels of datapoints in sample, with labels as boolean or
+                binary in [0,1] or in [-1,1].
+            sample_predictions (list): Binary labels of datapoints in sample flagged as positives
+                by algorithm, with labels as boolean or binary in [0,1] or in [-1,1].
+            population_size (int): Size of population.
+            population_flagged_count (int): Number of datapoints in population flagged as positives
+                by algorithm.
+            confidence_level (float): Confidence level, equal to area desired under curve.
+            exact_precision (float): If provided, the actual population precision.
+
         """
         check_init_params(
             sample_labels,
@@ -137,19 +139,19 @@ class ClassificationConfidenceIntervals:
         (
             self.pos_dist_tnorm,
             self.pos_dist_poisson,
-            self.pos_dist_binom,
+            # self.pos_dist_binom,
             self.pos_dist_posterior,
         ) = self.get_parametric_distributions(self.n_pos, self.n)
         (
             self.ppv_dist_tnorm,
             self.ppv_dist_poisson,
-            self.ppv_dist_binom,
+            # self.ppv_dist_binom,
             self.ppv_dist_posterior,
         ) = self.get_parametric_distributions(self.n_true_pos, self.n_flagged)
         (
             self.npv_dist_tnorm,
             self.npv_dist_poisson,
-            self.npv_dist_binom,
+            # self.npv_dist_binom,
             self.npv_dist_posterior,
         ) = self.get_parametric_distributions(self.n_true_neg, self.n_pred_neg)
 
@@ -159,7 +161,7 @@ class ClassificationConfidenceIntervals:
     ) -> Tuple[
         st._distn_infrastructure.rv_frozen,  # pylint: disable=W0212
         st._distn_infrastructure.rv_frozen,  # pylint: disable=W0212
-        st._distn_infrastructure.rv_frozen,  # pylint: disable=W0212
+        # st._distn_infrastructure.rv_frozen,  # pylint: disable=W0212
         st._distn_infrastructure.rv_frozen,  # pylint: disable=W0212
     ]:
         """Get parametric distributions for given metric.
@@ -173,6 +175,8 @@ class ClassificationConfidenceIntervals:
                 Fitted truncated normal distribution for metric.
             metric_dist_poisson (scipy.stats._distn_infrastructure.rv_frozen):
                 Fitted poisson distribution for metric.
+            # metric_dist_binom (scipy.stats._distn_infrastructure.rv_frozen):
+            #     Fitted binomial distribution for metric.
             metric_dist_posterior (scipy.stats._distn_infrastructure.rv_frozen):
                 Fitted posterior distribution for metirc.
 
@@ -189,15 +193,18 @@ class ClassificationConfidenceIntervals:
 
         metric_dist_poisson = st.poisson(successes)
 
-        metric_dist_binom = st.binom(n=size, p=phat)
+        # metric_dist_binom = st.binom(n=size, p=phat)
 
         metric_dist_posterior = st.beta(a=0.5 + successes, b=0.5 + size - successes)
 
-        return metric_dist_tnorm, metric_dist_poisson, metric_dist_binom, metric_dist_posterior
+        return metric_dist_tnorm, metric_dist_poisson, metric_dist_posterior
 
     def get_cis(
         self, n_iters: int = 1000000, plot_filename: str = ""
-    ) -> Tuple[CIDataClass, CIDataClass, CIDataClass, CIDataClass]:
+    ) -> Tuple[CIDataClass,
+               CIDataClass,
+               CIDataClass,
+               CIDataClass]:
         """Get confidence intervals.
 
         Args:
@@ -245,8 +252,8 @@ class ClassificationConfidenceIntervals:
         return CIDataClass(
             self.pos_dist_tnorm.interval(self.alpha),
             self.binomial_poisson_approx_ci(self.n, self.pos_dist_poisson, self.alpha),
-            self.binomial_likelihood_ratio_test_ci(self.n, self.n_pos, self.alpha),
-            self.binomial_score_test_ci(self.n, self.n_pos, self.alpha),
+            # self.binomial_likelihood_ratio_test_ci(self.n, self.n_pos, self.alpha),
+            # self.binomial_score_test_ci(self.n, self.n_pos, self.alpha),
             self.pos_dist_posterior.interval(self.alpha),
         )
 
@@ -260,8 +267,8 @@ class ClassificationConfidenceIntervals:
         return CIDataClass(
             self.ppv_dist_tnorm.interval(self.alpha),
             self.binomial_poisson_approx_ci(self.n_flagged, self.ppv_dist_poisson, self.alpha),
-            self.binomial_likelihood_ratio_test_ci(self.n_flagged, self.n_true_pos, self.alpha),
-            self.binomial_score_test_ci(self.n_flagged, self.n_true_pos, self.alpha),
+            # self.binomial_likelihood_ratio_test_ci(self.n_flagged, self.n_true_pos, self.alpha),
+            # self.binomial_score_test_ci(self.n_flagged, self.n_true_pos, self.alpha),
             self.ppv_dist_posterior.interval(self.alpha),
         )
 
@@ -275,8 +282,8 @@ class ClassificationConfidenceIntervals:
         return CIDataClass(
             self.npv_dist_tnorm.interval(self.alpha),
             self.binomial_poisson_approx_ci(self.n_pred_neg, self.npv_dist_poisson, self.alpha),
-            self.binomial_likelihood_ratio_test_ci(self.n_pred_neg, self.n_true_neg, self.alpha),
-            self.binomial_score_test_ci(self.n_pred_neg, self.n_true_neg, self.alpha),
+            # self.binomial_likelihood_ratio_test_ci(self.n_pred_neg, self.n_true_neg, self.alpha),
+            # self.binomial_score_test_ci(self.n_pred_neg, self.n_true_neg, self.alpha),
             self.npv_dist_posterior.interval(self.alpha),
         )
 
@@ -297,9 +304,9 @@ class ClassificationConfidenceIntervals:
         self.tpr_hats_poisson = self.run_simulations(
             self.ppv_dist_poisson, self.npv_dist_poisson, n_iters, True
         )
-        self.tpr_hats_lrt = self.tpr_hats_score = self.run_simulations(
-            self.ppv_dist_binom, self.npv_dist_binom, n_iters, True
-        )
+        # self.tpr_hats_lrt = self.tpr_hats_score = self.run_simulations(
+        #     self.ppv_dist_binom, self.npv_dist_binom, n_iters, True
+        # )
         self.tpr_hats_posterior = self.run_simulations(
             self.ppv_dist_posterior, self.npv_dist_posterior, n_iters, False
         )
@@ -308,8 +315,8 @@ class ClassificationConfidenceIntervals:
         return CIDataClass(
             self.simulated_ci(self.tpr_hats_tnorm, self.alpha),
             self.simulated_ci(self.tpr_hats_poisson, self.alpha),
-            self.simulated_ci(self.tpr_hats_lrt, self.alpha),
-            self.simulated_ci(self.tpr_hats_score, self.alpha),
+            # self.simulated_ci(self.tpr_hats_lrt, self.alpha),
+            # self.simulated_ci(self.tpr_hats_score, self.alpha),
             self.simulated_ci(self.tpr_hats_posterior, self.alpha),
         )
 
