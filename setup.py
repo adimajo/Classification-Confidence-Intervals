@@ -28,8 +28,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Kenneth S. Chen",
     author_email="kennychen12@gmail.com",
-    package_dir={"": "classificationconfidenceintervals"},
-    packages=find_packages(where="classificationconfidenceintervals"),
+    packages=find_packages(exclude=["contrib", "docs", "tests", "examples", "venv"]),
     include_package_data=True,
     install_requires=["matplotlib>=3.2.2", "numpy>=1.19.0", "scipy>=1.5.0", "seaborn>=0.10.1"],
     classifiers=[
